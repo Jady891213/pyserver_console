@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepCube Web编辑器</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- 引入字体图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- 引入CodeMirror库来实现代码编辑器 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <!-- 使用与图片更接近的主题 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/neat.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/selection/active-line.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #1890ff;
+            --secondary-color: #001529;
+            --bg-color: #f0f2f5;
+            --border-color: #d9d9d9;
+            --text-color: #333;
+            --light-text: #666;
+            --hover-color: #e6f7ff;
+            --error-color: #f5222d;
+            --success-color: #52c41a;
+            --warning-color: #faad14;
+            --info-color: #1890ff;
+            --sidebar-width: 300px;
+            --sidebar-min-width: 250px;
+            --sidebar-max-width: 600px;
+            --console-min-height: 100px;
+        }
+        
+        /* 参数默认值样式 */
+        .param-default-value {
+            font-size: 12px;
+            color: #777;
+            margin-top: 5px;
+        }
+        
+        .param-default-value-none {
+            font-size: 12px;
+            color: #ccc;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        
+        /* 运行确认弹框样式 */
+        .run-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .run-modal-content {
+            position: relative;
+            background-color: #fff;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            margin: 8% auto;
+            padding: 25px;
+            width: 650px;
+            max-width: 95%;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        
+        .run-modal-header {
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e8e8e8;
+            margin-bottom: 20px;
+        }
+        
+        .run-modal-title {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        
+        .run-modal-body {
+            padding: 15px 0;
+        }
+        
+        .run-modal-body h4 {
+            margin: 15px 0 8px 0;
+            font-size: 15px;
+            color: #444;
+        }
+        
+        .run-modal-body #run-script-name,
+        .run-modal-body #run-script-type {
+            padding: 8px 0;
+            font-weight: 500;
+        }
+        
+        .params-edit-container {
+            margin: 10px 0 20px 0;
+            position: relative;
+        }
+        
+        .run-modal-params-editor {
+            width: 100%;
+            min-height: 180px;
+            max-height: 300px;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            padding: 12px;
+            margin: 0;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            resize: vertical;
+            overflow: auto;
+            box-sizing: border-box;
+        }
+        
+        .run-modal-params-editor:focus {
+            outline: none;
+            border-color: #1890ff;
+            background-color: #fff;
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+        
+        .params-format-error {
+            color: #f5222d;
+            margin-top: 5px;
+            font-size: 12px;
+            min-height: 20px;
+        }
+        
+        .run-modal-footer {
+            text-align: right;
+            padding-top: 20px;
+            border-top: 1px solid #e8e8e8;
+        }
+        
+        .run-modal-footer button {
+            margin-left: 12px;
+            padding: 7px 16px;
+            font-size: 14px;
+        }
+        
+        .run-modal-close {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-size: 20px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .run-modal-close:hover {
+            color: #666;
+        }
+        
+        /* 按钮样式 */
+        .btn {
+            display: inline-block;
+            font-weight: 400;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            user-select: none;
+            border: 1px solid transparent;
+            padding: 0.375rem 0.75rem;
+            font-size: 1rem;
+            line-height: 1.5;
+            border-radius: 0.25rem;
+            transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out,
+                border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            color: #fff;
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: #1273de;
+            border-color: #1273de;
+        }
+        
+        .btn-cancel {
+            color: rgba(0, 0, 0, 0.65);
+            background-color: #fff;
+            border-color: #d9d9d9;
+        }
+        
+        .btn-cancel:hover {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        /* 暂无数据提示样式 */
+        .no-data-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            min-height: 150px;
+            color: #aaa;
+            text-align: center;
+        }
+        
+        .no-data-placeholder i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.6;
+        }
+        
+        .no-data-placeholder p {
+            font-size: 0.9rem;
+            margin: 0;
+        }
+        
+        /* 控制台标签栏相关样式更新 */
+        .execution-time {
+            margin-right: 10px;
+            margin-left: auto;
+            font-size: 0.85rem;
+            color: #666;
+            display: flex;
+            align-items: center;
+        }
+        
+        .console-close {
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+        }
+        
+        .console-close:hover {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <!-- 顶部工具栏 -->
+        <div class="top-toolbar">
+            <div class="toolbar-left">
+                <i class="fab fa-python python-icon"></i>
+                <span>ds_py_transform1</span>
+                <div class="script-type-container" id="script-type-switch">
+                    <span class="script-type">通用</span>
+                    <i class="fas fa-exchange-alt switch-icon"></i>
+                </div>
+            </div>
+            <div class="toolbar-right">
+                <div class="upload-btn" id="upload-script">
+                    <i class="fas fa-upload"></i>
+                    <span>上传脚本</span>
+                </div>
+                <div class="run-btn" id="run-script">
+                    <i class="fas fa-play"></i>
+                    <span>运行</span>
+                </div>
+                <div class="save-btn" id="save-script">
+                    <i class="fas fa-save"></i>
+                    <span>保存</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-container">
+            <!-- 左侧图标栏 -->
+            <div class="icon-bar">
+                <div class="icon-button" id="params-btn" title="运行参数">
+                    <i class="fas fa-sliders-h"></i>
+                </div>
+                <div class="icon-button" id="settings-btn" title="元素设置">
+                    <i class="fas fa-cog"></i>
+                </div>
+                <div class="icon-button" id="code-btn" title="代码模板">
+                    <i class="fas fa-code"></i>
+                </div>
+                <div class="bottom-icons">
+                    <div class="console-icon" id="console-btn" title="控制台">
+                        <i class="fas fa-terminal"></i>
+                    </div>
+                    <div class="log-icon" id="log-btn" title="作业日志">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 侧边栏部分 -->
+            <div class="sidebar" id="code-sidebar">
+                <div class="sidebar-header">
+                    <span>代码模板</span>
+                    <span class="close-sidebar"><i class="fas fa-chevron-left"></i></span>
+                </div>
+                <div class="sidebar-content">
+                    <div class="category">
+                        <div class="category-header">
+                            <span>通用</span>
+                            <div class="doc-icon-container" id="doc-link" title="打开文档">
+                                <i class="fas fa-book-open"></i>
+                            </div>
+                            <i class="fas fa-chevron-up"></i>
+                        </div>
+                        <div class="category-content expanded">
+                            <div class="template-item">数据库操作</div>
+                            <div class="template-item">维度元素操作</div>
+                            <div class="template-item">财务模型操作</div>
+                            <div class="template-item">业务模型操作</div>
+                            <div class="template-item">变量元素操作</div>
+                            <div class="template-item">HTTP接口调用</div>
+                            <div class="template-item">DeepUX数据源</div>
+                            <div class="template-item">并发编程</div>
+                            <div class="template-item">DeepCube - 多维数据分析</div>
+                            <div class="template-item">DeepCube - 财务数据计算</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="sidebar-preview">
+                    <div class="sidebar-preview-header">
+                        <span>代码预览</span>
+                        <div class="preview-actions">
+                            <span class="preview-copy" title="复制代码"><i class="fas fa-copy"></i></span>
+                            <span class="preview-insert" title="插入替换"><i class="fas fa-file-import"></i></span>
+                            <span class="preview-close" title="关闭"><i class="fas fa-times"></i></span>
+                        </div>
+                    </div>
+                    <div class="sidebar-preview-content" id="preview-code">
+                        <!-- 代码预览内容将通过JavaScript动态设置 -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar" id="params-sidebar">
+                <div class="sidebar-header">
+                    <span>运行参数</span>
+                    <span class="close-sidebar"><i class="fas fa-chevron-left"></i></span>
+                </div>
+                <div class="sidebar-content">
+                    <div class="setting-group">
+                        <div class="setting-label">自定义参数 <i class="fas fa-info-circle help-icon"></i></div>
+                        <div class="parameter-list" id="params-list">
+                            <!-- 参数列表将通过JavaScript动态生成 -->
+                        </div>
+                        <div class="add-parameter" id="add-param-btn">
+                            <i class="fas fa-plus"></i> 添加自定义参数
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar" id="settings-sidebar">
+                <div class="sidebar-header">
+                    <span>元素设置</span>
+                    <span class="close-sidebar"><i class="fas fa-chevron-left"></i></span>
+                </div>
+                <div class="sidebar-content">
+                    <!-- 基础设置 -->
+                    <div class="setting-section">
+                        <h3 class="setting-section-title">基础设置</h3>
+                        
+                        <div class="setting-group">
+                            <div class="setting-label">编码</div>
+                            <input type="text" class="setting-input" id="element-code" placeholder="请输入元素编码" value="py_script">
+                        </div>
+                        
+                        <div class="setting-group">
+                            <div class="setting-label">名称</div>
+                            <input type="text" class="setting-input" id="element-name" placeholder="请输入元素名称" value="py脚本">
+                        </div>
+                        
+                        <div class="setting-group">
+                            <div class="setting-label">脚本类型</div>
+                            <div class="script-type-container" id="setting-script-type-switch">
+                                <span class="script-type" id="setting-script-type">通用</span>
+                                <i class="fas fa-exchange-alt switch-icon"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-group">
+                            <div class="setting-label">记录执行日志</div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="log-execution" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="setting-group">
+                            <div class="setting-label">本地执行队列 <i class="fas fa-info-circle help-icon"></i></div>
+                            <div class="setting-text">默认队列</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 输出结构定义 -->
+                    <div class="setting-section">
+                        <div class="section-header collapsible">
+                            <h3 class="setting-section-title">输出结构定义</h3>
+                            <i class="fas fa-chevron-up"></i>
+                        </div>
+                        <div class="section-content expanded">
+                            <div class="setting-group">
+                                <div class="setting-label">启用指定输出结构 <i class="fas fa-info-circle help-icon"></i></div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="enable-output-structure">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            
+                            <div class="setting-group output-structure-group">
+                                <div class="setting-label">输出结构</div>
+                                <div class="dropdown-select">
+                                    <div class="select-value">前端Notification弹窗V2.0</div>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="setting-group output-structure-group">
+                                <div class="setting-label-small">输出结构内容含前端提示常见的定义要求，详见文档</div>
+                            </div>
+                            
+                            <div class="setting-group output-structure-group">
+                                <div class="setting-label">dict结构示例</div>
+                                <div class="code-preview-container">
+                                    <pre class="code-preview">{
+  "is_success": False,
+  # 布尔值，表示业务逻辑是否成功
+  "notification": {
+    "success": {
+      "title": "成功标题",
+      "description": "成功文案"
+    },
+    "info": {
+      "title": "提示标题",
+      "description": "提示文案"
+    },
+    "warning": {
+      "title": "警告标题",
+      "description": "警告文案"
+    },
+    "error": {
+      "title": "错误标题", 
+      "description": "错误文案"
+    }
+  }
+}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 主编辑区域 -->
+            <div class="main-content">
+                <div class="editor-container">
+                    <div id="code-editor"></div>
+                </div>
+                <!-- 控制台区域 -->
+                <div class="console-container collapsed">
+                    <div class="console-tabs">
+                        <div class="console-tab active" data-tab="result">结果</div>
+                        <div class="console-tab" data-tab="console">控制台</div>
+                        <div class="console-tab" data-tab="params">参数</div>
+                        <div class="execution-time" id="execution-time">运行时长 0ms</div>
+                        <div class="console-close"><i class="fas fa-times"></i></div>
+                    </div>
+                    <div class="console-panels">
+                        <div class="console-panel active" id="result-console">
+                            <div class="panel-header">
+                                <button class="copy-btn" id="copy-result-btn" title="复制结果">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            <div class="json-preview" id="result-json-preview">
+                                <div class="no-data-placeholder">
+                                    <i class="fas fa-database"></i>
+                                    <p>暂无数据，请运行脚本查看结果</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="console-panel" id="console-console">
+                            <div id="console-output">
+                                <div class="no-data-placeholder">
+                                    <i class="fas fa-terminal"></i>
+                                    <p>暂无输出，请运行脚本查看控制台日志</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="console-panel" id="params-console">
+                            <div class="panel-header">
+                                <button class="copy-btn" id="copy-params-btn" title="复制参数">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            <div class="json-preview" id="params-json-preview">
+                                <div class="no-data-placeholder">
+                                    <i class="fas fa-sliders-h"></i>
+                                    <p>暂无参数数据，请添加参数后查看</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 作业日志区域 -->
+                <div class="log-container collapsed">
+                    <div class="console-tabs">
+                        <div class="console-tab active" data-tab="job-log">作业日志</div>
+                        <div class="execution-time" id="log-execution-time"></div>
+                        <div class="console-close" id="log-close"><i class="fas fa-times"></i></div>
+                    </div>
+                    <div class="console-panels">
+                        <div class="console-panel active" id="job-log-console">
+                            <div class="log-table-container">
+                                <table class="log-table">
+                                    <thead>
+                                        <tr>
+                                            <th>开始时间</th>
+                                            <th>结束时间</th>
+                                            <th>用户</th>
+                                            <th>状态</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="job-log-list">
+                                        <!-- 日志列表将通过JavaScript动态生成 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="log-pagination">
+                                <span class="page-info">显示第 1-10 项结果，共 10000 项</span>
+                                <div class="pagination-controls">
+                                    <button class="page-btn" disabled><i class="fas fa-angle-left"></i></button>
+                                    <button class="page-btn active">1</button>
+                                    <button class="page-btn">2</button>
+                                    <button class="page-btn">3</button>
+                                    <button class="page-btn">4</button>
+                                    <button class="page-btn">5</button>
+                                    <span class="page-ellipsis">...</span>
+                                    <button class="page-btn">1000</button>
+                                    <button class="page-btn"><i class="fas fa-angle-right"></i></button>
+                                    <select class="page-size">
+                                        <option value="10">10条/页</option>
+                                        <option value="20" selected>20条/页</option>
+                                        <option value="50">50条/页</option>
+                                        <option value="100">100条/页</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 作业日志详情侧边栏 -->
+    <div class="detail-sidebar" id="log-detail-sidebar">
+        <div class="detail-header">
+            <div class="detail-title">作业详情</div>
+            <div class="detail-close" id="detail-close"><i class="fas fa-times"></i></div>
+        </div>
+        <div class="detail-content">
+            <div class="detail-section">
+                <h3 class="detail-section-title">基本信息</h3>
+                <table class="detail-info-table">
+                    <tr>
+                        <td class="detail-label">作业名称</td>
+                        <td class="detail-value" id="detail-job-name">HR_budget.action.query_hc_duration</td>
+                    </tr>
+                    <tr>
+                        <td class="detail-label">操作对象</td>
+                        <td class="detail-value" id="detail-operation-target">Python脚本</td>
+                    </tr>
+                    <tr>
+                        <td class="detail-label">所属应用</td>
+                        <td class="detail-value" id="detail-app">人力预算 (v0.2 最新试用版演示)</td>
+                    </tr>
+                    <tr>
+                        <td class="detail-label">用户</td>
+                        <td class="detail-value" id="detail-user">wenjun.zhou@proinnova.com.cn</td>
+                    </tr>
+                    <tr>
+                        <td class="detail-label">提交时间</td>
+                        <td class="detail-value" id="detail-submit-time">2025-04-11 13:36:57</td>
+                    </tr>
+                    <tr>
+                        <td class="detail-label">开始时间</td>
+                        <td class="detail-value" id="detail-start-time">2025-04-11 13:36:57</td>
+                    </tr>
+                    <tr>
+                        <td class="detail-label">结束时间</td>
+                        <td class="detail-value" id="detail-end-time">2025-04-11 13:37:00</td>
+                    </tr>
+                    <tr>
+                        <td class="detail-label">状态</td>
+                        <td class="detail-value log-status-success" id="detail-status">成功</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="detail-section">
+                <h3 class="detail-section-title">执行日志</h3>
+                <div class="detail-log-content" id="detail-log-content">
+                    <div class="log-entry">[13:36:57] 开始执行脚本...</div>
+                    <div class="log-entry">[13:36:58] 正在连接到数据源...</div>
+                    <div class="log-entry">[13:36:58] 成功连接数据源</div>
+                    <div class="log-entry">[13:36:59] 正在获取人员数据表...</div>
+                    <div class="log-entry">[13:36:59] 正在获取预算数据表...</div>
+                    <div class="log-entry">[13:36:59] 正在处理数据...</div>
+                    <div class="log-entry success-output">[13:37:00] 数据处理完成，共处理234条记录</div>
+                    <div class="log-entry success-output">[13:37:00] 脚本执行完成，耗时: 3秒</div>
+                </div>
+            </div>
+            <div class="detail-section">
+                <h3 class="detail-section-title">执行结果</h3>
+                <div class="json-preview" id="detail-result">
+                    <!-- 将由JavaScript动态填充 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 弹窗组件 -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modal-title" class="modal-title"></h2>
+            <p id="modal-message" class="modal-message"></p>
+            <div class="modal-buttons">
+                <button id="modal-ok" class="btn-primary">确定</button>
+                <button id="modal-cancel">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 脚本类型选择弹窗 -->
+    <div id="script-type-modal" class="modal">
+        <div class="modal-content script-type-modal-content">
+            <span class="close">&times;</span>
+            <h2 class="modal-title">选择脚本类型</h2>
+            <div class="script-type-options">
+                <div class="script-type-option">
+                    <div class="option-header">
+                        <input type="radio" id="type-standard" name="script-type" value="通用" checked>
+                        <label for="type-standard">通用</label>
+                    </div>
+                    <div class="option-description">标准的python脚本，历史兼容</div>
+                </div>
+                <div class="script-type-option">
+                    <div class="option-header">
+                        <input type="radio" id="type-deepcube" name="script-type" value="DeepCube计算脚本">
+                        <label for="type-deepcube">DeepCube计算脚本</label>
+                    </div>
+                    <div class="option-description">财务模型的计算脚本，通过UI模式定义计算目标，编写简短语句即能实现cube计算。</div>
+                </div>
+                
+                <!-- 添加警告提示 -->
+                <div class="script-type-warning" id="script-type-warning" style="display: none;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>切换脚本类型将重置所有配置！</span>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button id="script-type-cancel" class="btn-secondary">取消</button>
+                <button id="script-type-ok" class="btn-primary">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自定义参数编辑弹窗 -->
+    <div id="param-edit-modal" class="modal">
+        <div class="modal-content param-edit-modal-content">
+            <span class="close">&times;</span>
+            <h2 class="modal-title">自定义参数</h2>
+            <div class="param-edit-form">
+                <div class="param-form-group">
+                    <label for="param-code">编码</label>
+                    <input type="text" id="param-code" class="param-input" placeholder="请输入参数编码">
+                </div>
+                <div class="param-form-group">
+                    <label for="param-name">名称</label>
+                    <input type="text" id="param-name" class="param-input" placeholder="请输入参数名称">
+                </div>
+                <div class="param-form-group">
+                    <label for="param-type">数据类型</label>
+                    <select id="param-type" class="param-select">
+                        <option value="string">string</option>
+                        <option value="integer">integer</option>
+                        <option value="float">float</option>
+                        <option value="boolean">boolean</option>
+                        <option value="date">date</option>
+                        <option value="datetime">datetime</option>
+                    </select>
+                </div>
+                <div class="param-form-group">
+                    <label for="param-default">默认值</label>
+                    <input type="text" id="param-default" class="param-input" placeholder="请输入默认值">
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button id="param-cancel" class="btn-secondary">取消</button>
+                <button id="param-ok" class="btn-primary">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 运行确认弹框 -->
+    <div id="run-confirm-modal" class="run-modal">
+        <div class="run-modal-content">
+            <span class="run-modal-close">&times;</span>
+            <div class="run-modal-header">
+                <div class="run-modal-title">运行</div>
+            </div>
+            <div class="run-modal-body">
+                <h4>脚本名称</h4>
+                <div id="run-script-name">py_script</div>
+                
+                <h4>启动参数（可编辑）</h4>
+                <div class="params-edit-container">
+                    <textarea class="run-modal-params-editor" id="run-modal-params-editor" spellcheck="false" placeholder="在此输入JSON格式的参数"></textarea>
+                    <div class="params-format-error" id="params-format-error"></div>
+                </div>
+                
+                <h4>脚本类型</h4>
+                <div id="run-script-type">通用</div>
+            </div>
+            <div class="run-modal-footer">
+                <button id="run-modal-cancel" class="btn btn-cancel">取消</button>
+                <button id="run-modal-ok" class="btn btn-primary">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="logData.js"></script>
+    <script src="templateData.js"></script>
+    <script src="script.js"></script>
+</body>
+</html> 
