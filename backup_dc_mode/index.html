@@ -394,7 +394,7 @@
         <div class="content-container">
             <!-- 左侧图标栏 -->
             <div class="icon-bar">
-                <div class="icon-button" id="cube-btn" title="脚本设置">
+                <div class="icon-button" id="cube-btn" title="辅助输入">
                     <i class="fas fa-cube"></i>
                 </div>
                 <div class="icon-button" id="params-btn" title="运行参数">
@@ -454,120 +454,18 @@
                 </div>
             </div>
 
-            <!-- 脚本设置侧边栏 -->
+            <!-- 辅助输入侧边栏 -->
             <div class="sidebar" id="cube-sidebar">
                 <div class="sidebar-header">
-                    <span>脚本设置</span>
+                    <span>辅助输入</span>
                     <span class="close-sidebar"><i class="fas fa-chevron-left"></i></span>
                 </div>
                 <div class="sidebar-tabs">
-                    <div class="tab-item active" data-tab="model" onclick="switchTab('model')">财务模型</div>
+                    
+                    <div class="tab-item active" data-tab="functions" onclick="switchTab('functions')">函数</div>
                     <div class="tab-item" data-tab="members" onclick="switchTab('members')">维度成员</div>
-                    <div class="tab-item" data-tab="functions" onclick="switchTab('functions')">函数</div>
                 </div>
                 <div class="sidebar-content">
-                    <!-- 财务模型tab内容 -->
-                    <div class="tab-content active" id="model-content">
-                        <!-- 模型选择部分 -->
-                        <div class="setting-section">
-                            <div class="section-header">
-                                <h3 class="setting-section-title">财务模型</h3>
-                            </div>
-                            <div class="setting-group">
-                                <div class="model-select-container">
-                                    <div class="dropdown-select" id="cube-select">
-                                        <div class="select-value">cube1</div>
-                                        <i class="fas fa-chevron-down"></i>
-                                    </div>
-                                    <a href="#" class="model-edit-link" title="编辑财务模型">
-                                        <i class="fas fa-external-link-alt"></i>
-                                    </a>
-                                </div>
-                                <div class="model-path">/finance/models/cube1</div>
-                                <div class="setting-group">
-                                    <div class="setting-label">财务模型别名</div>
-                                    <input type="text" class="setting-input" value="cube1" />
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 维度设置 -->
-                        <div class="setting-section" id="dimensions-section">
-                            <div class="section-header">
-                                <h3 class="setting-section-title">维度字段设置</h3>
-                                <div class="section-actions">
-                                    <button class="refresh-btn" title="刷新维度数据">
-                                        <i class="fas fa-sync-alt"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="setting-group">
-                                <div class="dimensions-table">
-                                    <div class="dimensions-header">
-                                        <div class="dimension-col">维度</div>
-                                        <div class="alias-col">别名</div>
-                                        <div class="data-col">加载数据</div>
-                                    </div>
-                                    <div class="dimension-row">
-                                        <div class="dimension-col">cube1.year</div>
-                                        <div class="alias-col">
-                                            <input type="text" class="alias-input" value="Y" />
-                                        </div>
-                                        <div class="data-col">
-                                            <input type="text" class="data-input" value='Y["2021"]' />
-                                        </div>
-                                    </div>
-                                    <div class="dimension-row">
-                                        <div class="dimension-col">cube1.period</div>
-                                        <div class="alias-col">
-                                            <input type="text" class="alias-input" value="P" />
-                                        </div>
-                                        <div class="data-col">
-                                            <input type="text" class="data-input" value='P["YearTotal"].Base()' />
-                                        </div>
-                                    </div>
-                                    <div class="dimension-row">
-                                        <div class="dimension-col">cube1.scenario</div>
-                                        <div class="alias-col">
-                                            <input type="text" class="alias-input" value="S" />
-                                        </div>
-                                        <div class="data-col">
-                                            <input type="text" class="data-input" value='S["Actual"]' />
-                                        </div>
-                                    </div>
-                                    <div class="dimension-row">
-                                        <div class="dimension-col">cube1.version</div>
-                                        <div class="alias-col">
-                                            <input type="text" class="alias-input" value="V" />
-                                        </div>
-                                        <div class="data-col">
-                                            <input type="text" class="data-input" value='V["Working"]' />
-                                        </div>
-                                    </div>
-                                    <div class="dimension-row">
-                                        <div class="dimension-col">cube1.product</div>
-                                        <div class="alias-col">
-                                            <input type="text" class="alias-input" value="Product" />
-                                        </div>
-                                        <div class="data-col">
-                                            <input type="text" class="data-input" value='Product.All()' />
-                                        </div>
-                                    </div>
-                                    <div class="dimension-separator"></div>
-                                    <div class="dimension-row">
-                                        <div class="dimension-col">cube1.account</div>
-                                        <div class="alias-col">
-                                            <input type="text" class="alias-input" value="A" />
-                                        </div>
-                                        <div class="data-col">
-                                            <input type="text" class="data-input" value='A.All()' />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- 维度成员tab内容 -->
                     <div class="tab-content" id="members-content">
                         <div class="dimension-groups" id="dimension-groups">
@@ -576,7 +474,7 @@
                     </div>
 
                     <!-- 函数tab内容 -->
-                    <div class="tab-content" id="functions-content">
+                    <div class="tab-content active" id="functions-content">
                         <div class="functions-container">
                             <div class="functions-list" id="functions-list">
                                 <!-- 函数列表将通过JavaScript动态生成 -->
@@ -753,7 +651,40 @@
                                 </div>
                             </div>
                             <div class="card-content">
-                                <div id="execution-logic-editor"></div>
+                                <div class="script-layout">
+                                    <!-- 左侧步骤列表 -->
+                                    <div class="steps-panel">
+                                        <div class="steps-header">
+                                            <span>步骤</span>
+                                            <button class="add-step-btn" title="添加步骤">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                        <div class="steps-list" id="steps-list">
+                                            <!-- 步骤列表将通过JavaScript动态生成 -->
+                                        </div>
+                                        <!-- 添加步骤的下拉菜单 -->
+                                        <div class="step-dropdown" id="step-dropdown">
+                                            <div class="step-option" data-type="scope">SCOPE数据块</div>
+                                            <div class="step-option" data-type="iif">IIF指标判断</div>
+                                            <div class="step-option" data-type="global">引用全局变量</div>
+                                            <div class="step-option" data-type="clear">CLEAR_DATA数据块清数</div>
+                                            <div class="step-option" data-type="rollup">ROLLUP上卷计算</div>
+                                            <div class="step-option" data-type="free">自由计算</div>
+                                            <div class="step-option" data-type="display">DISPLAY_DATA打印预览</div>
+                                        </div>
+                                    </div>
+                                    <!-- 右侧配置区域 -->
+                                    <div class="config-panel">
+                                        <div class="no-step-selected">
+                                            <i class="fas fa-tasks"></i>
+                                            <p>请选择或添加步骤进行配置</p>
+                                        </div>
+                                        <div class="step-config-content">
+                                            <!-- 步骤配置内容将通过JavaScript动态生成 -->
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
