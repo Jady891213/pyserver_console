@@ -2654,6 +2654,9 @@ def main():
         });
     }
 
+    // 调用函数初始化函数列表
+    initializeFunctionsList();
+
     // 显示函数详情
     function showFunctionDetail(func) {
         // 隐藏"未选择"提示
