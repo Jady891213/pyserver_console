@@ -218,7 +218,6 @@ def main(params):
     initLogState();
     populateJobLog(); // 预先生成一些作业日志
     initExampleData(); // 初始化示例数据
-    initStepsList(); // 初始化步骤列表
     // 删除不存在的函数调用
     initCopyButtons(); // 初始化复制按钮
     initParamsManager(); // 初始化参数管理功能
@@ -940,35 +939,19 @@ def main(params):
     
     // 初始化折叠区域
     function initSettingSections() {
-        const sections = document.querySelectorAll('.setting-section');
-        const tabs = document.querySelectorAll('.setting-tab');
+        const collapsibleHeaders = document.querySelectorAll('.section-header.collapsible');
         
-        // 隐藏财务模型标签页
-        const financeTab = document.querySelector('.setting-tab[data-section="finance"]');
-        if (financeTab) {
-            financeTab.style.display = 'none';
-        }
-        
-        // 默认显示第一个可见的标签页
-        const firstVisibleTab = document.querySelector('.setting-tab:not([style*="display: none"])');
-        if (firstVisibleTab) {
-            firstVisibleTab.classList.add('active');
-            const sectionId = firstVisibleTab.getAttribute('data-section');
-            document.getElementById(sectionId).classList.add('active');
-        }
-        
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                if (tab.style.display !== 'none') {  // 只处理可见的标签页
-                    const sectionId = tab.getAttribute('data-section');
-                    
-                    // 移除所有标签和内容的active类
-                    tabs.forEach(t => t.classList.remove('active'));
-                    sections.forEach(s => s.classList.remove('active'));
-                    
-                    // 添加当前标签和内容的active类
-                    tab.classList.add('active');
-                    document.getElementById(sectionId).classList.add('active');
+        collapsibleHeaders.forEach(header => {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('i');
+            
+            header.addEventListener('click', function() {
+                content.classList.toggle('expanded');
+                
+                if (content.classList.contains('expanded')) {
+                    icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
+                } else {
+                    icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
                 }
             });
         });
@@ -2690,621 +2673,91 @@ def main():
         detailInfo.querySelector('.function-example code').textContent = func.example;
     }
 
-    // 初始化步骤列表功能
-    function initStepsList() {
-        const addStepBtn = document.querySelector('.add-step-btn');
-        if (!addStepBtn) return; // 如果按钮不存在则退出
-
-        const stepDropdown = document.getElementById('step-dropdown');
-        const stepsList = document.getElementById('steps-list');
-        const configPanel = document.querySelector('.config-panel');
-        let steps = [];
-        let currentStepId = null;
-
-        // 添加默认步骤：财务模型设置
-        const defaultStep = {
-            id: 'default-step',
-            type: 'cube-config',
-            title: '财务模型设置',
-            isDefault: true // 标记为默认步骤
-        };
-        steps.push(defaultStep);
-        renderStep(defaultStep);
-        selectStep(defaultStep.id);
-
-        // 渲染步骤
-        function renderStep(step) {
-            const stepElement = document.createElement('div');
-            stepElement.className = 'step-item';
-            stepElement.setAttribute('data-step-id', step.id);
-            stepElement.innerHTML = `
-                <div class="step-number">${steps.length}</div>
-                <div class="step-title">${step.title}</div>
-                <div class="step-actions">
-                    ${!step.isDefault ? `
-                        <span class="step-action-btn delete-step" title="删除">
-                            <i class="fas fa-trash"></i>
-                        </span>
-                    ` : ''}
-                </div>
-            `;
-
-            // 点击步骤选中
-            stepElement.addEventListener('click', function() {
-                selectStep(step.id);
-            });
-
-            // 只为非默认步骤添加删除功能
-            if (!step.isDefault) {
-                const deleteBtn = stepElement.querySelector('.delete-step');
-                if (deleteBtn) {
-                    deleteBtn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        deleteStep(step.id);
-                    });
-                }
-            }
-
-            stepsList.appendChild(stepElement);
-        }
-
-        // 选中步骤
-        function selectStep(stepId) {
-            currentStepId = stepId;
-            
-            // 更新步骤项的选中状态
-            document.querySelectorAll('.step-item').forEach(item => {
-                item.classList.remove('active');
-                if (item.getAttribute('data-step-id') == stepId) {
-                    item.classList.add('active');
-                }
-            });
-
-            // 显示配置面板
-            const noStepSelected = document.querySelector('.no-step-selected');
-            if (noStepSelected) {
-                noStepSelected.style.display = 'none';
-            }
-            const configContent = document.querySelector('.step-config-content');
-            if (configContent) {
-                configContent.style.display = 'block';
-            }
-
-            // 根据步骤类型显示对应的配置界面
-            const step = steps.find(s => s.id === stepId);
-            if (step) {
-                renderStepConfig(step);
-            }
-        }
-
-        // 删除步骤
-        function deleteStep(stepId) {
-            const index = steps.findIndex(s => s.id === stepId);
-            if (index > -1) {
-                steps.splice(index, 1);
-                // 移除步骤元素
-                const stepElement = document.querySelector(`[data-step-id="${stepId}"]`);
-                if (stepElement) {
-                    stepElement.remove();
-                }
-                // 重新编号
-                document.querySelectorAll('.step-item').forEach((item, idx) => {
-                    item.querySelector('.step-number').textContent = idx + 1;
-                });
-                // 如果删除的是当前选中的步骤，清空配置面板
-                if (currentStepId === stepId) {
-                    currentStepId = null;
-                    const noStepSelected = document.querySelector('.no-step-selected');
-                    if (noStepSelected) {
-                        noStepSelected.style.display = 'flex';
-                    }
-                    const configContent = document.querySelector('.step-config-content');
-                    if (configContent) {
-                        configContent.style.display = 'none';
-                    }
-                }
-            }
-        }
-
-        // 渲染步骤配置界面
-        function renderStepConfig(step) {
-            const configContent = document.querySelector('.step-config-content');
-            if (!configContent) return;
-
-            // 清空配置内容
-            configContent.innerHTML = '';
-
-            // 根据步骤类型显示不同的配置界面
-            switch (step.type) {
-                case 'cube-config':
-                    // 财务模型设置配置
-                    configContent.innerHTML = `
-                        <div class="config-section">
-                            <h3>财务模型设置</h3>
-                            
-                            
-                            <div class="setting-section">
-                                <div class="section-header">
-                                    <h3 class="setting-section-title">财务模型</h3>
-                                </div>
-                                <div class="setting-group">
-                                    <div class="model-select-container">
-                                        <div class="dropdown-select" id="cube-select">
-                                            <div class="select-value">cube1</div>
-                                            <i class="fas fa-chevron-down"></i>
-                                        </div>
-                                        <a href="#" class="model-edit-link" title="编辑财务模型">
-                                            <i class="fas fa-external-link-alt"></i>
-                                        </a>
-                                    </div>
-                                    <div class="model-path">/finance/models/cube1</div>
-                                    
-                                </div>
-                            </div>
-
-
-
-                            <div class="setting-section" id="dimensions-section">
-                                <div class="section-header">
-                                    <h3 class="setting-section-title">维度字段设置</h3>
-                                    <div class="section-actions">
-                                        <button class="refresh-btn" title="刷新维度数据">
-                                            <i class="fas fa-sync-alt"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="setting-group">
-                                    <div class="dimensions-table">
-                                        <div class="dimensions-header">
-                                            <div class="dimension-col">维度</div>
-                                            <div class="alias-col">别名</div>
-                                            <div class="data-col">加载数据</div>
-                                        </div>
-                                        <div class="dimension-row">
-                                            <div class="dimension-col">cube1.year</div>
-                                            <div class="alias-col">
-                                                <input type="text" class="alias-input" value="Y" />
-                                            </div>
-                                            <div class="data-col">
-                                                <input type="text" class="data-input" value='Y["2021"]' />
-                                            </div>
-                                        </div>
-                                        <div class="dimension-row">
-                                            <div class="dimension-col">cube1.period</div>
-                                            <div class="alias-col">
-                                                <input type="text" class="alias-input" value="P" />
-                                            </div>
-                                            <div class="data-col">
-                                                <input type="text" class="data-input" value='P["YearTotal"].Base()' />
-                                            </div>
-                                        </div>
-                                        <div class="dimension-row">
-                                            <div class="dimension-col">cube1.scenario</div>
-                                            <div class="alias-col">
-                                                <input type="text" class="alias-input" value="S" />
-                                            </div>
-                                            <div class="data-col">
-                                                <input type="text" class="data-input" value='S["Actual"]' />
-                                            </div>
-                                        </div>
-                                        <div class="dimension-row">
-                                            <div class="dimension-col">cube1.version</div>
-                                            <div class="alias-col">
-                                                <input type="text" class="alias-input" value="V" />
-                                            </div>
-                                            <div class="data-col">
-                                                <input type="text" class="data-input" value='V["Working"]' />
-                                            </div>
-                                        </div>
-                                        <div class="dimension-row">
-                                            <div class="dimension-col">cube1.product</div>
-                                            <div class="alias-col">
-                                                <input type="text" class="alias-input" value="Product" />
-                                            </div>
-                                            <div class="data-col">
-                                                <input type="text" class="data-input" value='Product.All()' />
-                                            </div>
-                                        </div>
-                                        <div class="dimension-separator"></div>
-                                        <div class="dimension-row">
-                                            <div class="dimension-col">cube1.account</div>
-                                            <div class="alias-col">
-                                                <input type="text" class="alias-input" value="A" />
-                                            </div>
-                                            <div class="data-col">
-                                                <input type="text" class="data-input" value='A.All()' />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-                    `;
-                    break;
-
-                case 'scope':
-                    // SCOPE数据块配置
-                    configContent.innerHTML = `
-                        <div class="config-section">
-                            <h3>SCOPE数据块设置</h3>
-                            <div class="config-item">
-                                <label>数据块名称</label>
-                                <input type="text" class="config-input" placeholder="输入数据块名称" value="${step.config?.blockName || ''}">
-                            </div>
-                            <div class="config-item">
-                                <label>维度筛选</label>
-                                <div class="filter-list">
-                                    <div class="filter-item">
-                                        <select class="filter-dimension">
-                                            <option value="Y">Year</option>
-                                            <option value="P">Period</option>
-                                            <option value="S">Scenario</option>
-                                            <option value="V">Version</option>
-                                            <option value="A">Account</option>
-                                            <option value="Product">Product</option>
-                                        </select>
-                                        <input type="text" class="filter-value" placeholder="输入筛选值">
-                                        <button class="btn-small btn-remove"><i class="fas fa-times"></i></button>
-                                    </div>
-                                </div>
-                                <button class="btn-small add-filter">添加筛选条件</button>
-                            </div>
-                            <div class="config-item">
-                                <label>数据块描述</label>
-                                <textarea class="config-textarea" placeholder="输入数据块描述">${step.config?.description || ''}</textarea>
-                            </div>
-                        </div>
-                    `;
-                    break;
-
-                case 'block':
-                    // 数据块计算配置
-                    configContent.innerHTML = `
-                        <div class="config-section">
-                            <h3>数据块计算设置</h3>
-                            <div class="config-item">
-                                <label>目标数据块</label>
-                                <input type="text" class="config-input" placeholder="输入目标数据块名称" value="${step.config?.targetBlock || ''}">
-                            </div>
-                            <div class="config-item">
-                                <label>计算公式</label>
-                                <div class="formula-editor">
-                                    <div class="formula-input">
-                                        <input type="text" class="config-input" placeholder="输入计算公式" value="${step.config?.formula || ''}">
-                                    </div>
-                                    <div class="formula-tools">
-                                        <button class="btn-small insert-dimension">插入维度</button>
-                                        <button class="btn-small insert-operator">插入运算符</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="config-item">
-                                <label>计算条件</label>
-                                <textarea class="config-textarea" placeholder="输入计算条件（可选）">${step.config?.condition || ''}</textarea>
-                            </div>
-                        </div>
-                    `;
-                    break;
-
-                case 'submit':
-                    // 数据提交配置
-                    configContent.innerHTML = `
-                        <div class="config-section">
-                            <h3>数据提交设置</h3>
-                            <div class="config-item">
-                                <label>提交范围</label>
-                                <select class="config-select">
-                                    <option value="all" ${step.config?.submitRange === 'all' ? 'selected' : ''}>全部数据</option>
-                                    <option value="modified" ${step.config?.submitRange === 'modified' ? 'selected' : ''}>仅修改数据</option>
-                                </select>
-                            </div>
-                            <div class="config-item">
-                                <label>提交说明</label>
-                                <textarea class="config-textarea" placeholder="输入提交说明">${step.config?.description || ''}</textarea>
-                            </div>
-                            <div class="config-item">
-                                <label>提交选项</label>
-                                <div class="checkbox-group">
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" ${step.config?.validateBeforeSubmit ? 'checked' : ''}>
-                                        提交前验证数据
-                                    </label>
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" ${step.config?.createBackup ? 'checked' : ''}>
-                                        创建备份
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    break;
-
-                case 'rollup':
-                    // ROLLUP上卷计算配置
-                    configContent.innerHTML = `
-                        <div class="config-section">
-                            <h3>ROLLUP上卷计算设置</h3>
-                            <div class="config-item">
-                                <label>目标数据块</label>
-                                <input type="text" class="config-input" placeholder="输入目标数据块名称" value="${step.config?.targetBlock || ''}">
-                            </div>
-                            <div class="config-item">
-                                <label>上卷维度</label>
-                                <div class="dimension-selector">
-                                    <select class="config-select" multiple>
-                                        <option value="Y" ${step.config?.rollupDimensions?.includes('Y') ? 'selected' : ''}>Year</option>
-                                        <option value="P" ${step.config?.rollupDimensions?.includes('P') ? 'selected' : ''}>Period</option>
-                                        <option value="S" ${step.config?.rollupDimensions?.includes('S') ? 'selected' : ''}>Scenario</option>
-                                        <option value="V" ${step.config?.rollupDimensions?.includes('V') ? 'selected' : ''}>Version</option>
-                                        <option value="A" ${step.config?.rollupDimensions?.includes('A') ? 'selected' : ''}>Account</option>
-                                        <option value="Product" ${step.config?.rollupDimensions?.includes('Product') ? 'selected' : ''}>Product</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="config-item">
-                                <label>计算方式</label>
-                                <select class="config-select">
-                                    <option value="sum" ${step.config?.calculationType === 'sum' ? 'selected' : ''}>求和</option>
-                                    <option value="avg" ${step.config?.calculationType === 'avg' ? 'selected' : ''}>平均值</option>
-                                    <option value="max" ${step.config?.calculationType === 'max' ? 'selected' : ''}>最大值</option>
-                                    <option value="min" ${step.config?.calculationType === 'min' ? 'selected' : ''}>最小值</option>
-                                </select>
-                            </div>
-                            <div class="config-item">
-                                <label>计算条件</label>
-                                <textarea class="config-textarea" placeholder="输入计算条件（可选）">${step.config?.condition || ''}</textarea>
-                            </div>
-                        </div>
-                    `;
-                    break;
-
-                case 'clear':
-                    // 数据清除配置
-                    configContent.innerHTML = `
-                        <div class="config-section">
-                            <h3>数据清除设置</h3>
-                            <div class="config-item">
-                                <label>清除范围</label>
-                                <select class="config-select">
-                                    <option value="all" ${step.config?.clearRange === 'all' ? 'selected' : ''}>全部数据</option>
-                                    <option value="selected" ${step.config?.clearRange === 'selected' ? 'selected' : ''}>选定范围</option>
-                                </select>
-                            </div>
-                            <div class="config-item">
-                                <label>数据块选择</label>
-                                <div class="block-selector">
-                                    <select class="config-select" multiple>
-                                        <option value="block1" ${step.config?.selectedBlocks?.includes('block1') ? 'selected' : ''}>数据块1</option>
-                                        <option value="block2" ${step.config?.selectedBlocks?.includes('block2') ? 'selected' : ''}>数据块2</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="config-item">
-                                <label>清除选项</label>
-                                <div class="checkbox-group">
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" ${step.config?.keepStructure ? 'checked' : ''}>
-                                        保留结构
-                                    </label>
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" ${step.config?.createBackup ? 'checked' : ''}>
-                                        创建备份
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    break;
-
-                case 'copy':
-                    // 数据复制配置
-                    configContent.innerHTML = `
-                        <div class="config-section">
-                            <h3>数据复制设置</h3>
-                            <div class="config-item">
-                                <label>源数据块</label>
-                                <select class="config-select">
-                                    <option value="">选择源数据块</option>
-                                    <option value="block1" ${step.config?.sourceBlock === 'block1' ? 'selected' : ''}>数据块1</option>
-                                    <option value="block2" ${step.config?.sourceBlock === 'block2' ? 'selected' : ''}>数据块2</option>
-                                </select>
-                            </div>
-                            <div class="config-item">
-                                <label>目标数据块</label>
-                                <select class="config-select">
-                                    <option value="">选择目标数据块</option>
-                                    <option value="block1" ${step.config?.targetBlock === 'block1' ? 'selected' : ''}>数据块1</option>
-                                    <option value="block2" ${step.config?.targetBlock === 'block2' ? 'selected' : ''}>数据块2</option>
-                                </select>
-                            </div>
-                            <div class="config-item">
-                                <label>复制选项</label>
-                                <div class="checkbox-group">
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" ${step.config?.overwrite ? 'checked' : ''}>
-                                        覆盖已存在数据
-                                    </label>
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" ${step.config?.copyStructure ? 'checked' : ''}>
-                                        复制结构
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="config-item">
-                                <label>筛选条件</label>
-                                <div class="filter-list">
-                                    <div class="filter-item">
-                                        <select class="filter-dimension">
-                                            <option value="Y">Year</option>
-                                            <option value="P">Period</option>
-                                            <option value="S">Scenario</option>
-                                            <option value="V">Version</option>
-                                            <option value="A">Account</option>
-                                            <option value="Product">Product</option>
-                                        </select>
-                                        <input type="text" class="filter-value" placeholder="输入筛选值">
-                                        <button class="btn-small btn-remove"><i class="fas fa-times"></i></button>
-                                    </div>
-                                </div>
-                                <button class="btn-small add-filter">添加筛选条件</button>
-                            </div>
-                        </div>
-                    `;
-                    break;
-
-                case 'export':
-                    // 数据导出配置
-                    configContent.innerHTML = `
-                        <div class="config-section">
-                            <h3>数据导出设置</h3>
-                            <div class="config-item">
-                                <label>导出数据块</label>
-                                <select class="config-select" multiple>
-                                    <option value="block1" ${step.config?.exportBlocks?.includes('block1') ? 'selected' : ''}>数据块1</option>
-                                    <option value="block2" ${step.config?.exportBlocks?.includes('block2') ? 'selected' : ''}>数据块2</option>
-                                </select>
-                            </div>
-                            <div class="config-item">
-                                <label>导出格式</label>
-                                <select class="config-select">
-                                    <option value="excel" ${step.config?.exportFormat === 'excel' ? 'selected' : ''}>Excel</option>
-                                    <option value="csv" ${step.config?.exportFormat === 'csv' ? 'selected' : ''}>CSV</option>
-                                    <option value="json" ${step.config?.exportFormat === 'json' ? 'selected' : ''}>JSON</option>
-                                </select>
-                            </div>
-                            <div class="config-item">
-                                <label>导出选项</label>
-                                <div class="checkbox-group">
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" ${step.config?.includeHeaders ? 'checked' : ''}>
-                                        包含表头
-                                    </label>
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" ${step.config?.includeMetadata ? 'checked' : ''}>
-                                        包含元数据
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="config-item">
-                                <label>导出路径</label>
-                                <input type="text" class="config-input" placeholder="输入导出路径" value="${step.config?.exportPath || ''}">
-                            </div>
-                        </div>
-                    `;
-                    break;
-
-                default:
-                    configContent.innerHTML = '<div class="no-config">暂无配置选项</div>';
-            }
-
-            // 为配置项添加事件监听
-            initConfigEvents(step);
-        }
-
-        // 初始化配置项事件
-        function initConfigEvents(step) {
-            const configContent = document.querySelector('.step-config-content');
-            if (!configContent) return;
-
-            // 监听所有输入变化
-            configContent.querySelectorAll('input, select, textarea').forEach(input => {
-                input.addEventListener('change', function() {
-                    if (!step.config) {
-                        step.config = {};
-                    }
-                    
-                    if (this.type === 'checkbox') {
-                        step.config[this.name] = this.checked;
-                    } else {
-                        step.config[this.name] = this.value;
-                    }
-                });
-            });
-
-            // 添加筛选条件按钮事件
-            const addFilterBtn = configContent.querySelector('.add-filter');
-            if (addFilterBtn) {
-                addFilterBtn.addEventListener('click', function() {
-                    const filterList = this.previousElementSibling;
-                    const newFilter = document.createElement('div');
-                    newFilter.className = 'filter-item';
-                    newFilter.innerHTML = `
-                        <select class="filter-dimension">
-                            <option value="Y">Year</option>
-                            <option value="P">Period</option>
-                            <option value="S">Scenario</option>
-                            <option value="V">Version</option>
-                            <option value="A">Account</option>
-                            <option value="Product">Product</option>
-                        </select>
-                        <input type="text" class="filter-value" placeholder="输入筛选值">
-                        <button class="btn-small btn-remove"><i class="fas fa-times"></i></button>
-                    `;
-                    filterList.appendChild(newFilter);
-                });
-            }
-
-            // 删除筛选条件按钮事件
-            configContent.querySelectorAll('.btn-remove').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    this.closest('.filter-item').remove();
-                });
-            });
-        }
-
-        // 添加步骤按钮点击事件
-        addStepBtn.addEventListener('click', function(e) {
-            console.log('Add step button clicked');
-            e.stopPropagation();
-            const btnRect = this.getBoundingClientRect();
-            stepDropdown.style.position = 'absolute';
-            stepDropdown.style.top = (btnRect.bottom + 2) + 'px';
-            stepDropdown.style.left = (btnRect.left - 100) + 'px'; // 向左偏移以对齐按钮
-            stepDropdown.style.width = '150px'; // 设置固定宽度
-            stepDropdown.classList.toggle('show');
-        });
-
-        // 点击其他地方关闭下拉菜单
-        document.addEventListener('click', function() {
-            stepDropdown.classList.remove('show');
-        });
-
-        // 阻止下拉菜单的点击事件冒泡
-        stepDropdown.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-
-        // 步骤选项点击事件
-        document.querySelectorAll('.step-option').forEach(option => {
-            option.addEventListener('click', function() {
-                const type = this.getAttribute('data-type');
-                const title = this.textContent;
-                addStep(type, title);
-                stepDropdown.classList.remove('show');
-            });
-        });
-
-        // 添加步骤
-        function addStep(type, title) {
-            const stepId = Date.now();
-            const step = {
-                id: stepId,
-                type: type,
-                title: title,
-                isDefault: false // 标记为非默认步骤
+    // 初始化DeepCube脚本设置
+    function initDeepCubeSettings() {
+        // 获取设置元素
+        const calculationMode = document.getElementById('calculation-mode');
+        const parallelCalculation = document.getElementById('parallel-calculation');
+        const cacheStrategy = document.getElementById('cache-strategy');
+        const logLevel = document.getElementById('log-level');
+        
+        // 从localStorage加载保存的设置
+        loadSettings();
+        
+        // 监听设置变化
+        calculationMode.addEventListener('change', saveSettings);
+        parallelCalculation.addEventListener('change', saveSettings);
+        cacheStrategy.addEventListener('change', saveSettings);
+        logLevel.addEventListener('change', saveSettings);
+        
+        // 加载设置
+        function loadSettings() {
+            const settings = JSON.parse(localStorage.getItem('deepcubeSettings')) || {
+                calculationMode: 'incremental',
+                parallelCalculation: true,
+                cacheStrategy: 'memory',
+                logLevel: 'info'
             };
-            steps.push(step);
-            renderStep(step);
-            selectStep(stepId);
+            
+            calculationMode.value = settings.calculationMode;
+            parallelCalculation.checked = settings.parallelCalculation;
+            cacheStrategy.value = settings.cacheStrategy;
+            logLevel.value = settings.logLevel;
         }
+        
+        // 保存设置
+        function saveSettings() {
+            const settings = {
+                calculationMode: calculationMode.value,
+                parallelCalculation: parallelCalculation.checked,
+                cacheStrategy: cacheStrategy.value,
+                logLevel: logLevel.value
+            };
+            
+            localStorage.setItem('deepcubeSettings', JSON.stringify(settings));
+            logToResultConsole('DeepCube设置已更新');
+        }
+        
+        // 获取当前设置
+        function getCurrentSettings() {
+            return {
+                calculationMode: calculationMode.value,
+                parallelCalculation: parallelCalculation.checked,
+                cacheStrategy: cacheStrategy.value,
+                logLevel: logLevel.value
+            };
+        }
+        
+        // 将设置应用到脚本执行
+        function applySettingsToScript() {
+            const settings = getCurrentSettings();
+            const script = executionLogicEditor.getValue();
+            
+            // 在脚本开头添加设置注释
+            const settingsComment = `# DeepCube设置
+# 计算模式: ${settings.calculationMode}
+# 并行计算: ${settings.parallelCalculation ? '启用' : '禁用'}
+# 缓存策略: ${settings.cacheStrategy}
+# 日志级别: ${settings.logLevel}
+
+`;
+            
+            // 更新编辑器内容
+            executionLogicEditor.setValue(settingsComment + script);
+        }
+        
+        // 监听编辑器内容变化
+        executionLogicEditor.on('change', applySettingsToScript);
+        
+        // 初始化时应用设置
+        applySettingsToScript();
     }
 
-    // 在DOMContentLoaded事件中初始化步骤列表功能
+    // 在DOM加载完成后初始化设置
     document.addEventListener('DOMContentLoaded', function() {
-        // ... existing code ...
+        // ... 其他初始化代码 ...
         
-        // 初始化步骤列表功能
-        initStepsList();
+        // 初始化DeepCube设置
+        initDeepCubeSettings();
     });
 }); 

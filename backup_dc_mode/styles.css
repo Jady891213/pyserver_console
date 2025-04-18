@@ -1798,9 +1798,8 @@ body.resizing-console * {
 }
 
 .card-content {
-    flex: 1;
-    overflow: auto;
-    padding: 0;
+    height: 50%;
+    overflow-y: auto;
     position: relative;
 }
 
@@ -2672,42 +2671,102 @@ body.resizing-console * {
     display: none;
 }
 
-/* 卡片内容区域调整 */
-.card-content {
-    height: calc(100% - 48px); /* 减去卡片头部的高度 */
-    padding: 0;
-    overflow: hidden;
+/* DeepCube脚本设置区域样式 */
+.script-settings {
+    padding: 15px;
+    border-bottom: 1px solid #e8e8e8;
+    background-color: #fafafa;
+    height: 50%;
+    overflow-y: auto;
 }
 
-/* DeepCube脚本卡片调整 */
-.deepcube-script-card {
-    height: 100%;
+.settings-section {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding: 8px;
+}
+
+.setting-group {
     display: flex;
     flex-direction: column;
-}
-
-.card-header {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #fff;
-}
-
-.card-actions {
-    display: flex;
     gap: 8px;
 }
 
-.preview-code-btn {
-    padding: 4px 8px;
-    color: var(--primary-color);
-    cursor: pointer;
+.setting-label {
+    font-size: 13px;
+    color: #666;
+    font-weight: 500;
+}
+
+.setting-select {
+    padding: 6px 8px;
+    border: 1px solid var(--border-color);
     border-radius: 4px;
+    background-color: #fff;
+    font-size: 13px;
+    color: #333;
+    outline: none;
     transition: all 0.3s;
 }
 
-.preview-code-btn:hover {
-    background-color: var(--hover-color);
+.setting-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* 开关样式 */
+.setting-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
+
+.setting-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.setting-switch label {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 20px;
+}
+
+.setting-switch label:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+.setting-switch input:checked + label {
+    background-color: var(--primary-color);
+}
+
+.setting-switch input:checked + label:before {
+    transform: translateX(20px);
+}
+
+/* 调整编辑器容器高度 */
+.card-content {
+    height: 66.67%; /* 编辑器区域高度为整体的2/3 */
+    overflow: hidden;
+}
+
+#execution-logic-editor {
+    height: 100%;
 }
